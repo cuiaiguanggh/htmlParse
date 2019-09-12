@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <title>错题详情</title>
+  <link rel="stylesheet" href="https://static.afanti100.com/search/static/dist/app/style/search_result/search_result-8a4c6f3db4.min.css?v=0610">
+  <link rel="stylesheet" href="https://static.afanti100.com/search/static/dist/app/style/search_result/search_result_wrapper-5066f9c233.min.css?v=0610">
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <link rel="stylesheet" href="https://res.wx.qq.com/open/libs/weui/2.0.1/weui.min.css">
+  <link rel="stylesheet" href="./index.css">
+  <link rel="stylesheet" href="./question.css">
+  <script type="text/javascript" src="https://res.wx.qq.com/open/libs/weuijs/1.2.1/weui.min.js"></script>
+  <script type="text/javascript" src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
+  <script src="./jquery.js"></script>
+</head>
+<body>
+  <div id="app" class='box' :class="{loaded:loaded}">
+    <div v-if='showhander' class='back_hander' v-on:click='backMainPage'>
+      <img src="./images/left_jt.png" alt="">
+      返回首页
+    </div>
+    <section style='marginTop:5px'>
+      <h5>原图</h5>
+      <div class='question_img_box margin_min_top'>
+        <img  class='question_img' :src="question.questionUrls" alt="">
+      </div>
+    </section>
+    <section>
+      <div class="question_title_box">
+          <h5>题目</h5>
+          <div v-if='matchFinish&&matchState>0' v-on:click="showMaskFun(match)"  class='text_trivial font_12 match_box'>
+            <img src="./images/matchingerror.png"  alt="">
+            <span style="marginLeft:4px">{{match?'题目匹配报错':'恢复题目匹配'}}</span>    
+          </div>
+      </div>
+      <div  class='con_flex col center' v-if='matchState<=0||!matchFinish||!match'>
+        <img v-if='matchState<=0||!match' class='margin_min_top' src="./images/his_noquestion.png" width="79px" height="88px" alt="">
+        <div class='text_trivial text_center margin_min_top' >
+          <span v-if='!match&&matchState>0&&matchFinish'>您已取消匹配</span>
+          <span v-if='matchState<=0'>
+            <span v-if='matchState==0'>题目正在生成中，请稍等...</span>
+            <span v-if='matchState<0'>暂无匹配题目</span>
+          </span>
+        </div>
+      </div>
+      <div v-if='match&&matchFinish'>
+        <div class='margin_min_top padding_min' v-html="question.title"></div>
+        <div class='padding_min' v-if='matchFinish&&matchState>0'>
+          【知识点】<span v-html="question.knowledges" v-if='question.knowledges'></span>  <span v-if='!question.knowledges'>暂无知识点</span>
+        </div>
+      </div> 
+    </section>
+    <section v-if='match&&matchFinish&&matchState>0'>
+      <h5>答案与解析</h5>
+      <div class='parse_bg margin_min_top'>
+          <div v-html="question.answer"></div>
+          <div class='font_strong margin_min_top'>解析：</div>
+          <div v-if='question.parse' v-html="question.parse"></div>
+          <span v-if='!question.parse'>暂无解析</span>
+      </div>
+    </section>
+    <section>
+      <h5>视频讲解</h5>
+      <img class='margin_min_top' v-if="!question.teachVideo" src="./images/noTeacherVideo.png" class='no_video_img' alt="">
+      <div class="video_hander margin_min_top "  v-if="question.teachVideo" >
+        <img src="./images/video_play.png" class="video_img" alt="" v-on:click='playVideoImgClick'>
+      </div>
+    </section>
+
+    <section>
+      <h5>优选错题</h5>
+      <div class='text_trivial text_center  con_flex col center' >  
+        <img class='margin_min_bottom margin_min_top' v-if='matchState<=0||!match||!question.practiseTitle' src="./images/his_noquestion.png" width="79px" height="88px" alt="">     
+        <span v-if='!match&&matchFinish'>您已取消匹配</span>
+        <span v-if='match&&(matchState<0||(matchFinish&&!question.practiseTitle))'>暂无优选错题</span>
+        <span v-if='matchState==0'>优选错题正在生成中，请稍等...</span>
+      </div>
+      <div v-if='match&&matchFinish'>
+        <div class='clearfix margin_min_top padding_min' v-html="question.practiseTitle"></div>
+        <div class='padding_min' v-if='matchFinish&&matchState>0&&question.practiseTitle'>
+          【知识点】<span v-if='question.knowledges' v-html="question.knowledges"></span> <span v-if='!question.knowledges'>暂无知识点</span>
+        </div>
+      </div>
+    </section>
+
+    <div v-if='match&&(question.practiseAnswer||question.practiseParse)&&matchFinish&&matchState>0' class='look_parse font_14' v-on:click='onLookParseClick'>
+      查看答案与解析 <img src="./images/bulexiajiantou.png" class='jt_icon' :class="{activeImg:showParse}" alt="">
+    </div>
+
+    <section class='practise_section' :class="{hideParse:!showParse&&!match}">   
+      <h5 class='margin_min_top'>答案与解析</h5>
+      <div class='parse_bg margin_min_top'>
+        <div v-html="question.practiseAnswer"></div>
+        <div class='font_strong margin_min_top'>解析：</div>
+        <div v-if='question.practiseParse' v-html="question.practiseParse"></div>
+        <div v-if='!question.practiseParse'>暂无解析</div>
+      </div>    
+    </section>
+
+    <div class='mask'  id='mask_9527' @touchmove.prevent catchtouchmove="ture" v-on:click="hideMaskFun($event)"  v-if='showMask'  :class="{active:showMaskActive}">
+        <div class='mask_con'>
+          <div class="con_title text_center">题目匹配报错</div>
+            <div class="con_info text_center">取消匹配结果、以图片的形式显示</div>
+            <div class="button-box">
+              <button class="cancel_btn"
+               v-on:click.stop="hideMaskFun(-1)">取消</button>
+              <button class="noborder confirm_btn"  
+               v-on:click.stop="cancelMatch(0)">确定</button>
+          </div> 
+        </div>
+    </div>
+    <video class='video_box'  autoplay v-if='showvideo' :class="{videoActive:showvideoActive}" id='video_9527'  controls  :src="question.teachVideo"></video>
+
+  </div>
+
+  <script> 
+
+      var app = new Vue({   
+        el: '#app',
+        data: {
+          question: {},
+          showParse:true,
+          parseHeight:0,
+          err:'',
+          loaded:false,
+          showMask:false,
+          showMaskActive:false,
+          qid:0,
+          token:'eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiI0NTY5OTI4NzUyNDMzMTUyIiwicHJvamVjdCI6ImtjY3QifQ.SxNDAV1TWbB23EZrV7LISBVZVRDB6BwZwj_PrhdCM4M',
+          host:'',
+          childId:4477684596443136,
+          match:true,
+          matchFinish:false,
+          showhander:false,
+          videobj:null,
+          showvideo:false,
+          showvideoActive:false,
+          matchState:0
+        },
+        onLoad(){
+          this.match=true
+          this.showhander=false
+          this.videobj=null
+          this.matchFinish=false
+        },
+        created: function () {
+
+          // let windowUrl='https://api.kacha.xin/wrongbook/question/detail?qid='+125276+'&token=eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiI0NTY5OTI4NzUyNDMzMTUyIiwicHJvamVjdCI6ImtjY3QifQ.SxNDAV1TWbB23EZrV7LISBVZVRDB6BwZwj_PrhdCM4M&host=https://api.kacha.xin'
+          let _showhander=this.getQueryString('showhander')
+          if(_showhander==true) this.showhander=true
+          this.host=this.getQueryString('host')||'https://develop.kacha.xin/'
+          this.qid=this.getQueryString('qid')||28736//27198//117073//27197//16906//28736//45298//117073//48293//48290 //16906  //16920
+          this.token=this.getQueryString('token')||'eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiI0NTY5OTI4NzUyNDMzMTUyIiwicHJvamVjdCI6ImtjY3QifQ.SxNDAV1TWbB23EZrV7LISBVZVRDB6BwZwj_PrhdCM4M'
+          this.childId=this.getQueryString('childId')||4477684596443136
+          this.getQuestionDetails()
+
+        },
+        mounted(){
+
+          var _this=this
+          setTimeout(() => {
+            //_this.loaded=true
+            var _box=$(".practise_section")[0]
+            console.log($(".practise_section")[0].offsetHeight,_box)
+            if(_box){
+              _this.parseHeight=_box.offsetHeight
+              _this.showParse=false
+            }
+           
+          }, 300);
+        },
+      methods: {
+        playVideoImgClick(){
+          console.log('video icon click')
+          this.showvideo=true
+          let _this=this
+          setTimeout(() => {
+            _this.showvideoActive=true
+            _this.FullScreen()
+            _this.videobj=document.getElementById("video_9527")
+            console.log('video obj',_this.videobj)
+            _this.videobj.addEventListener('ended', function () {  
+              console.log('video end')
+              _this.videoPlayEnd()
+            }, false);
+          }, 300);
+        },
+        videoPlayEnd(){
+          console.log('video end callback')
+          this.showvideoActive=false
+          let _this=this
+          _this.exitFullscreen()
+          setTimeout(() => {
+            _this.showvideo=false
+            
+          }, 300);
+         
+        },
+        FullScreen() {
+            var ele = document.documentElement;
+            if (ele .requestFullscreen) {
+                ele .requestFullscreen();
+            } else if (ele .mozRequestFullScreen) {
+                ele .mozRequestFullScreen();
+            } else if (ele .webkitRequestFullScreen) {
+                ele .webkitRequestFullScreen();
+            }
+        },
+        //退出全屏
+        exitFullscreen() {
+            var de = document;
+            if (de.exitFullscreen) {
+                de.exitFullscreen();
+            } else if (de.mozCancelFullScreen) {
+                de.mozCancelFullScreen();
+            } else if (de.webkitCancelFullScreen) {
+                de.webkitCancelFullScreen();
+            }
+        },
+        backMainPage(){
+          console.log('back kacha homepage')
+          wx.miniProgram.reLaunch({url: '../../main/main'})
+        },
+        showMaskFun(b){
+          if(b){
+            this.showMask=true
+            let _this=this
+            setTimeout(() => {
+              _this.showMaskActive=true
+            }, 100);
+          }else{
+            this.cancelMatch(1)
+          }
+         },
+        hideMaskFun(e){
+          if(e==-1||e.target.id=='mask_9527'){
+            this.showMaskActive=false
+            let _this=this
+              setTimeout(() => {
+                _this.showMask=false
+            }, 200);
+          } 
+         },
+        cancelMatch(state){
+          this.hideMaskFun(-1)
+          let data={wrongId: this.qid, childId: this.childId, matchState: state}
+          let _this=this
+          this.request('wrongbook/question/feedback',data,'post').then(res => {
+            console.log('22',res)
+            if (res.result === 0) {
+              _this.match=!_this.match
+            } else {    
+              weui.toast(res.msg, {
+                duration: 2000,
+                className: 'we_toast',
+              });
+            }
+          }).catch(res=>{
+            weui.toast('服务器错误', {
+              duration: 2000,
+              className: 'we_toast',
+            });
+          })
+        },
+        onLookParseClick(){
+            this.showParse=!this.showParse
+            console.log($(".practise_section"),this.parseHeight)
+            if(this.showParse){
+              //  $(".practise_section").css("height",this.parseHeight+'px')
+               $(".practise_section").css("maxHeight",'2000px')        
+               $('html, body').animate({scrollTop:5000}, 'slow');
+              return false;
+            }else{
+              $(".practise_section").css("maxHeight",0)
+            }
+            
+          },
+          getQuestionDetails: function() {
+              var _this = this
+              let url="wrongbook/question/detail?wrongId="+_this.qid
+              this.request(url).then(res=>{
+                _this.matchFinish=true
+                console.log('promise repose',res)
+                if(res.result==0){
+                  _this.question=res.data
+  
+                  res.data.matchState==0?_this.match=false:_this.match=true
+                  _this.matchState=res.data.questionId
+                  _this.loaded=true
+                }else{
+                  
+                  console.log('repose error:',res)
+                  //alert('repose error:',res)
+                  // _this.err='服务器错误'
+                  weui.toast('服务器错误', {
+                    duration: 2000,
+                    className: 'we_toast',
+                  });
+                  _this.loaded=true
+                }
+              }).catch(res=>{
+                _this.loaded=true
+                _this.matchFinish=true
+                // _this.err='服务器错误'
+                console.error('repose error:',res)
+               // alert('repose error:',res)
+              })
+          },
+          getQueryString(name)
+          {
+            var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if(r!=null)return  unescape(r[2]); return null;
+          },
+          request (_url, _data,_method) {
+            let _this=this
+            _url=_this.host+_url
+            return new Promise((resolve, reject) => {
+              _method?_method:_method='get'
+              $.ajax(
+                {
+                  beforeSend: function(request) {
+                    request.setRequestHeader("Authorization",_this.token);
+                    request.setRequestHeader("version","b1.0.0");
+                  },
+                  cache:false,
+                  async:true,
+                  url:_url,
+                  data:_data,
+                  type : _method,
+                  success:function(res){      
+                    console.log('respose success',res)
+                    resolve(res)
+                    wx.miniProgram.postMessage({ data: res })
+                  },
+                  error:function (res) {
+                    weui.toast('服务器错误', {
+                      duration: 2000,
+                      className: 'we_toast',
+                    });
+                    reject(res)
+                    wx.miniProgram.postMessage({ data: res })
+                    console.error('repose error:',res)
+
+                  }
+
+
+              });
+            })
+          }
+         
+        }
+      })
+      document.documentElement.style.webkitTouchCallout = "none"; //禁止弹出菜单
+      document.documentElement.style.webkitUserSelect = "none";//禁止选中
+      document.body.onselectstart=document.body.ondrag=function(e){
+          e.preventDefault();
+          return false;
+      }
+    </script>
+  
+</body>
+</html>
